@@ -29,7 +29,7 @@ const scrapeLogic = async () => {
       console.log(pageContent);
     };
 
-    // Run the scraping function every 10 seconds
+    // Run the scraping function every 10 seconds lol
     setInterval(scrape, 10000);
   } catch (e) {
     console.error(e);
