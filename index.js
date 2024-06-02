@@ -1,5 +1,9 @@
 const puppeteer = require("puppeteer");
+const express = require("express");
 require("dotenv").config();
+
+const app = express();
+const PORT = process.env.PORT || 4000;
 
 const scrapeLogic = async () => {
   const browser = await puppeteer.launch({
@@ -36,5 +40,9 @@ const scrapeLogic = async () => {
   setInterval(scrape, 10000);
 };
 
-// Run the scrapeLogic function when the script is executed
-scrapeLogic();
+// Start the Express server
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+  // Run the scrapeLogic function when the server starts
+  scrapeLogic();
+});
