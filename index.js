@@ -24,7 +24,7 @@ const scrapeLogic = async () => {
   // Function to perform the scraping
   const scrape = async () => {
     try {
-      await page.goto("https://hrznlabs.com/");
+      await page.goto("https://hrznlabs.com/", { timeout: 6000 }); // Increase the timeout to 60 seconds
 
       // Extract all the text from the page
       const pageContent = await page.evaluate(() => document.body.innerText);
@@ -32,7 +32,7 @@ const scrapeLogic = async () => {
       // Print the extracted text
       console.log(pageContent);
     } catch (e) {
-      console.error(e);
+      console.error("Error during scraping:", e);
     }
   };
 
@@ -40,9 +40,16 @@ const scrapeLogic = async () => {
   setInterval(scrape, 10000);
 };
 
+// Function to log a message every 10 seconds
+const logMessage = () => {
+  console.log("Server is still running...");
+};
+
 // Start the Express server
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
   // Run the scrapeLogic function when the server starts
   scrapeLogic();
+  // Log a message every 10 seconds
+  setInterval(logMessage, 10000);
 });
