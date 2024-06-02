@@ -1,7 +1,7 @@
 const puppeteer = require("puppeteer");
 require("dotenv").config();
 
-const scrapeLogic = async () => {
+const scrapeLogic = async (res) => {
   const browser = await puppeteer.launch({
     args: [
       "--disable-setuid-sandbox",
@@ -14,25 +14,37 @@ const scrapeLogic = async () => {
         ? process.env.PUPPETEER_EXECUTABLE_PATH
         : puppeteer.executablePath(),
   });
-
   try {
     const page = await browser.newPage();
 
-    // Function to perform the scraping
-    const scrape = async () => {
-      await page.goto("https://hrznlabs.com/");
+    await page.goto("https://developer.chrome.com/");
 
-      // Extract all the text from the page
-      const pageContent = await page.evaluate(() => document.body.innerText);
+    // Set screen size
+    await page.setViewport({ width: 1080, height: 1024 });
 
-      // Print the extracted text
-      console.log(pageContent);
-    };
+    // Type into search box
+    await page.type(".search-box__input", "automate beyond recorder");
 
-    // Run the scraping function every 10 seconds lol
-    setInterval(scrape, 10000);
+    // Wait and click on first result
+    const searchResultSelector = ".search-box__link";
+    await page.waitForSelector(searchResultSelector);
+    await page.click(searchResultSelector);
+
+    // Locate the full title with a unique string
+    const textSelector = await page.waitForSelector(
+      "text/Customize and automate"
+    );
+    const fullTitle = await textSelector.evaluate((el) => el.textContent);
+
+    // Print the full title
+    const logStatement = `The title of this blog post is ${fullTitle}`;
+    console.log(logStatement);
+    res.send(logStatement);
   } catch (e) {
     console.error(e);
+    res.send(`Something went wrong while running Puppeteer: ${e}`);
+  } finally {
+    await browser.close();
   }
 };
 
