@@ -2,10 +2,14 @@ const axios = require("axios");
 const fs = require("fs");
 const puppeteer = require("puppeteer");
 const express = require("express");
+const Parser = require("rss-parser");
 require("dotenv").config();
 
 const app = express();
 const PORT = process.env.PORT || 4000;
+
+// Create an instance of the Parser class
+const parser = new Parser();
 
 // Hardcoded configuration
 const config = {
