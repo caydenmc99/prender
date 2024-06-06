@@ -15,10 +15,11 @@ const PORT = process.env.PORT || 4000;
 const config = {
   rssUrl:
     "https://www.upwork.com/ab/feed/jobs/rss?paging=NaN-undefined&q=ai&sort=recency&api_params=1&securityToken=8f4b8e5f993ec8b834b95dc2df774ff6e23ced67cf6f210e4e4178595b88215e16709a56164d3037c0165ab473c298c97fbcaae124408b3fc63c510edb2253b5&userUid=1313721826954805248&orgUid=1650943632177328128",
-    openaiApiKey: "sk-proj-mG2yM481qFzhK6qBS3OuT3BlbkFJYTCHAKEdozotNSVQ9Hj6",
+  openaiApiKey: "sk-proj-mG2yM481qFzhK6qBS3OuT3BlbkFJYTCHAKEdozotNSVQ9Hj6",
 };
 
-const OPENAI_API_KEY = "sk-proj-mG2yM481qFzhK6qBS3OuT3BlbkFJYTCHAKEdozotNSVQ9Hj6";
+const OPENAI_API_KEY =
+  "sk-proj-mG2yM481qFzhK6qBS3OuT3BlbkFJYTCHAKEdozotNSVQ9Hj6";
 
 // OpenAI API URL
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
@@ -122,11 +123,19 @@ async function loadUpworkWithCookies(jobSummary, jobLink) {
     console.log("Waiting for 3 seconds...");
     await new Promise((resolve) => setTimeout(resolve, 3000));
 
-    console.log("Typing security answer...");
-    await page.type('[aria-describedby="answer-message"]', security);
+    const securityAnswerInput = await page.$('[aria-describedby="answer-message"]');
+    if (securityAnswerInput) {
+      console.log("Typing security answer...");
+      await securityAnswerInput.type(security);
 
-    console.log("Clicking the 'Continue' button...");
-    await page.click('[button-role="continue"]');
+      console.log("Clicking the 'Continue' button...");
+      await page.click('[button-role="continue"]');
+
+      console.log("Waiting for 10 seconds...");
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+    } else {
+      console.log("Security answer input not found, skipping security question step.");
+    }
 
     console.log("Waiting for 10 seconds...");
     await new Promise((resolve) => setTimeout(resolve, 10000));
