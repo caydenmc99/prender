@@ -4,6 +4,7 @@ const fs = require("fs");
 const puppeteer = require("puppeteer-extra");
 const StealthPlugin = require("puppeteer-extra-plugin-stealth");
 require("dotenv").config();
+const express = require("express"); 
 
 // Use puppeteer-extra-plugin-stealth
 puppeteer.use(StealthPlugin());
