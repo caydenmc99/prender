@@ -80,7 +80,7 @@ async function loadUpworkWithCookies(jobSummary, jobLink) {
     await new Promise((resolve) => setTimeout(resolve, delayInMilliseconds));
 
     const browser = await puppeteer.launch({
-      headless: false,
+      headless: true,
       defaultViewport: null,
       args: [
         "--disable-setuid-sandbox",
