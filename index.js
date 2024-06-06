@@ -101,8 +101,8 @@ async function loadUpworkWithCookies(jobSummary, jobLink) {
     const loginUrl = `https://www.upwork.com/ab/account-security/login`;
     await page.goto(loginUrl);
 
-    console.log("Waiting for 3 seconds...");
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+    console.log("Waiting for email input to load...");
+    await page.waitForSelector('[aria-describedby="username-message"]', { timeout: 30000 });
 
     console.log("Typing email...");
     await page.type('[aria-describedby="username-message"]', email);
@@ -110,8 +110,8 @@ async function loadUpworkWithCookies(jobSummary, jobLink) {
     console.log("Clicking the 'Continue' button...");
     await page.click('[button-role="continue"]');
 
-    console.log("Waiting for 3 seconds...");
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+    console.log("Waiting for password input to load...");
+    await page.waitForSelector('[aria-describedby="password-message"]', { timeout: 30000 });
 
     console.log("Typing password...");
     await page.type('[aria-describedby="password-message"]', password);
@@ -119,10 +119,8 @@ async function loadUpworkWithCookies(jobSummary, jobLink) {
     console.log("Clicking the 'Continue' button...");
     await page.click('[button-role="continue"]');
 
-    console.log("Waiting for 3 seconds...");
-    await new Promise((resolve) => setTimeout(resolve, 3000));
-
-    const securityAnswerInput = await page.$('[aria-describedby="answer-message"]');
+    console.log("Waiting for security question input to load...");
+    const securityAnswerInput = await page.waitForSelector('[aria-describedby="answer-message"]', { timeout: 30000 });
     if (securityAnswerInput) {
       console.log("Typing security answer...");
       await securityAnswerInput.type(security);
@@ -130,14 +128,14 @@ async function loadUpworkWithCookies(jobSummary, jobLink) {
       console.log("Clicking the 'Continue' button...");
       await page.click('[button-role="continue"]');
 
-      console.log("Waiting for 10 seconds...");
-      await new Promise((resolve) => setTimeout(resolve, 3000));
+      console.log("Waiting for page to load...");
+      await page.waitForNavigation({ timeout: 30000 });
     } else {
       console.log("Security answer input not found, skipping security question step.");
     }
 
-    console.log("Waiting for 10 seconds...");
-    await new Promise((resolve) => setTimeout(resolve, 10000));
+    console.log("Waiting for apply URL to load...");
+    await page.waitForTimeout(10000);
 
     // Extract the required part from the link
     const linkParts = jobLink.split("_");
