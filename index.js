@@ -74,7 +74,7 @@ async function loadUpworkWithCookies(jobSummary, jobLink) {
       } minutes before running the automation...`
     );
 
-    // Wait for the specified delay llooll
+    // Wait for the specified delay
     await new Promise((resolve) => setTimeout(resolve, delayInMilliseconds));
 
     const browser = await puppeteer.launch({
@@ -86,10 +86,10 @@ async function loadUpworkWithCookies(jobSummary, jobLink) {
         "--no-first-run",
         "--no-zygote",
         "--single-process",
-        "--disable-gpu"
+        "--disable-gpu",
       ],
       headless: true,
-      executablePath: PUPPETEER_EXECUTABLE_PATH
+      executablePath: PUPPETEER_EXECUTABLE_PATH,
     });
 
     const page = await browser.newPage();
@@ -98,31 +98,49 @@ async function loadUpworkWithCookies(jobSummary, jobLink) {
     const password = "FuckUpwork123!";
     const security = "lions";
 
-    console.log("Navigating to login page...");
-    const loginUrl = `https://www.upwork.com/ab/account-security/login`;
-    await page.goto(loginUrl, { timeout: 60000 });
+    try {
+      console.log("Navigating to login page...");
+      const loginUrl = `https://www.upwork.com/ab/account-security/login`;
+      await page.goto(loginUrl, { timeout: 60000 });
 
-    console.log("Waiting for email input to load...");
-    await page.waitForSelector('[aria-describedby="username-message"]', { timeout: 60000 });
+      console.log("Waiting for email input to load...");
+      await page.waitForSelector('[aria-describedby="username-message"]', {
+        timeout: 60000,
+      });
 
-    console.log("Typing email...");
-    await page.type('[aria-describedby="username-message"]', email);
+      console.log("Typing email...");
+      await page.type('[aria-describedby="username-message"]', email);
 
-    console.log("Clicking the 'Continue' button...");
-    await page.click('[button-role="continue"]');
+      console.log("Clicking the 'Continue' button...");
+      await page.click('[button-role="continue"]');
+    } catch (error) {
+      console.error("Error during email input step:", error);
+      throw error;
+    }
 
-    console.log("Waiting for password input to load...");
-    await page.waitForSelector('[aria-describedby="password-message"]', { timeout: 60000 });
+    try {
+      console.log("Waiting for password input to load...");
+      await page.waitForSelector('[aria-describedby="password-message"]', {
+        timeout: 60000,
+      });
 
-    console.log("Typing password...");
-    await page.type('[aria-describedby="password-message"]', password);
+      console.log("Typing password...");
+      await page.type('[aria-describedby="password-message"]', password);
 
-    console.log("Clicking the 'Continue' button...");
-    await page.click('[button-role="continue"]');
+      console.log("Clicking the 'Continue' button...");
+      await page.click('[button-role="continue"]');
+    } catch (error) {
+      console.error("Error during password input step:", error);
+      throw error;
+    }
 
-    console.log("Waiting for security question input to load...");
-    const securityAnswerInput = await page.waitForSelector('[aria-describedby="answer-message"]', { timeout: 60000 });
-    if (securityAnswerInput) {
+    try {
+      console.log("Waiting for security question input to load...");
+      const securityAnswerInput = await page.waitForSelector(
+        '[aria-describedby="answer-message"]',
+        { timeout: 60000 }
+      );
+
       console.log("Typing security answer...");
       await securityAnswerInput.type(security);
 
@@ -131,186 +149,219 @@ async function loadUpworkWithCookies(jobSummary, jobLink) {
 
       console.log("Waiting for page to load...");
       await page.waitForNavigation({ timeout: 60000 });
-    } else {
-      console.log("Security answer input not found, skipping security question step.");
+    } catch (error) {
+      if (error.name === "TimeoutError") {
+        console.log(
+          "Security answer input not found, skipping security question step."
+        );
+      } else {
+        console.error("Error during security question step:", error);
+        throw error;
+      }
     }
 
-    console.log("Waiting for apply URL to load...");
-    await page.waitForTimeout(10000);
+    try {
+      console.log("Waiting for apply URL to load...");
+      await page.waitForTimeout(10000);
 
-    // Extract the required part from the link
-    const linkParts = jobLink.split("_");
-    const requiredPart = linkParts[linkParts.length - 1].split("?")[0];
+      // Extract the required part from the link
+      const linkParts = jobLink.split("_");
+      const requiredPart = linkParts[linkParts.length - 1].split("?")[0];
 
-    // Create the apply URL
-    const applyUrl = `https://www.upwork.com/ab/proposals/job/${requiredPart}/apply/`;
+      // Create the apply URL
+      const applyUrl = `https://www.upwork.com/ab/proposals/job/${requiredPart}/apply/`;
 
-    console.log("Navigating to apply URL:", applyUrl);
-    await page.goto(applyUrl, { timeout: 60000 });
+      console.log("Navigating to apply URL:", applyUrl);
+      await page.goto(applyUrl, { timeout: 60000 });
 
-    console.log("Waiting for 3 seconds...");
-    await new Promise((resolve) => setTimeout(resolve, 3000));
-
-    // Generate cover letter using OpenAI API
-    const coverLetter = await generateCoverLetter(jobSummary);
-    console.log("Generated Cover Letter:", coverLetter);
-
-    console.log("Typing cover letter...");
-    await page.type('[aria-labelledby="cover_letter_label"]', coverLetter);
-
-    // Click on the dropdown based on the text inside it
-    const dropdownFound = await page.evaluate(() => {
-      const dropdownToggle = document.querySelector(
-        ".air3-dropdown-toggle-label.ellipsis"
-      );
-      if (
-        dropdownToggle &&
-        dropdownToggle.textContent.trim() === "Select a frequency"
-      ) {
-        dropdownToggle.click();
-        return true;
-      }
-      return false;
-    });
-
-    if (dropdownFound) {
-      console.log("Found 'Select a frequency' dropdown.");
-
-      // Wait for the dropdown options to appear
-      await page.waitForSelector(".air3-menu-item");
-
-      console.log("Clicking on the 'Never' option...");
-      // Click on the "Never" option using tabindex attribute
-      await page.evaluate(() => {
-        const neverOption = document.querySelector(
-          'li.air3-menu-item[tabindex="0"]'
-        );
-        if (neverOption) {
-          neverOption.click();
-        }
-      });
-    } else {
-      console.log(
-        'Dropdown for selecting frequency not found. Clicking on the "By project" radio button.'
-      );
-
-      // Click on the specific "By project" radio button
-      await page.evaluate(() => {
-        const radioButtons = document.querySelectorAll(
-          'input[type="radio"][name="milestoneMode"]'
-        );
-        for (const radioButton of radioButtons) {
-          if (radioButton.value === "default") {
-            radioButton.click();
-            break;
-          }
-        }
-      });
-
-      console.log("Waiting for 3 seconds after clicking the radio button...");
-      // Wait for 3 seconds after clicking the radio button
+      console.log("Waiting for 3 seconds...");
       await new Promise((resolve) => setTimeout(resolve, 3000));
+    } catch (error) {
+      console.error("Error navigating to apply URL:", error);
+      throw error;
+    }
 
-      console.log("Clicking on the 'Select a duration' dropdown...");
-      // Click on the "Select a duration" dropdown
-      await page.evaluate(() => {
+    let coverLetter;
+    try {
+      // Generate cover letter using OpenAI API
+      coverLetter = await generateCoverLetter(jobSummary);
+      console.log("Generated Cover Letter:", coverLetter);
+
+      console.log("Typing cover letter...");
+      await page.type('[aria-labelledby="cover_letter_label"]', coverLetter);
+    } catch (error) {
+      console.error("Error generating or typing cover letter:", error);
+      throw error;
+    }
+
+    try {
+      // Click on the dropdown based on the text inside it
+      const dropdownFound = await page.evaluate(() => {
         const dropdownToggle = document.querySelector(
           ".air3-dropdown-toggle-label.ellipsis"
         );
         if (
           dropdownToggle &&
-          dropdownToggle.textContent.trim() === "Select a duration"
+          dropdownToggle.textContent.trim() === "Select a frequency"
         ) {
           dropdownToggle.click();
+          return true;
         }
+        return false;
       });
 
-      console.log("Waiting for 3 seconds after clicking the dropdown...");
-      // Wait for 3 seconds after clicking the dropdown
+      if (dropdownFound) {
+        console.log("Found 'Select a frequency' dropdown.");
+
+        // Wait for the dropdown options to appear
+        await page.waitForSelector(".air3-menu-item");
+
+        console.log("Clicking on the 'Never' option...");
+        // Click on the "Never" option using tabindex attribute
+        await page.evaluate(() => {
+          const neverOption = document.querySelector(
+            'li.air3-menu-item[tabindex="0"]'
+          );
+          if (neverOption) {
+            neverOption.click();
+          }
+        });
+      } else {
+        console.log(
+          'Dropdown for selecting frequency not found. Clicking on the "By project" radio button.'
+        );
+
+        // Click on the specific "By project" radio button
+        await page.evaluate(() => {
+          const radioButtons = document.querySelectorAll(
+            'input[type="radio"][name="milestoneMode"]'
+          );
+          for (const radioButton of radioButtons) {
+            if (radioButton.value === "default") {
+              radioButton.click();
+              break;
+            }
+          }
+        });
+
+        console.log("Waiting for 3 seconds after clicking the radio button...");
+        // Wait for 3 seconds after clicking the radio button
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+
+        console.log("Clicking on the 'Select a duration' dropdown...");
+        // Click on the "Select a duration" dropdown
+        await page.evaluate(() => {
+          const dropdownToggle = document.querySelector(
+            ".air3-dropdown-toggle-label.ellipsis"
+          );
+          if (
+            dropdownToggle &&
+            dropdownToggle.textContent.trim() === "Select a duration"
+          ) {
+            dropdownToggle.click();
+          }
+        });
+
+        console.log("Waiting for 3 seconds after clicking the dropdown...");
+        // Wait for 3 seconds after clicking the dropdown
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+
+        console.log("Clicking on the 'Less than 1 month' option...");
+        // Click on the "Less than 1 month" option
+        await page.evaluate(() => {
+          const options = document.querySelectorAll("li.air3-menu-item");
+          for (const option of options) {
+            if (option.textContent.trim() === "Less than 1 month") {
+              option.click();
+              break;
+            }
+          }
+        });
+      }
+    } catch (error) {
+      console.error("Error selecting frequency or duration:", error);
+      throw error;
+    }
+
+    try {
+      console.log(
+        "Waiting for 3 seconds before clicking the 'Submit proposal' button..."
+      );
+      // Wait for 3 seconds before clicking the "Submit proposal" button
       await new Promise((resolve) => setTimeout(resolve, 3000));
 
-      console.log("Clicking on the 'Less than 1 month' option...");
-      // Click on the "Less than 1 month" option
+      console.log("Clicking the 'Submit proposal' or 'Send for' button...");
+      // Click the "Submit proposal" button or any button containing "Send for"
       await page.evaluate(() => {
-        const options = document.querySelectorAll("li.air3-menu-item");
-        for (const option of options) {
-          if (option.textContent.trim() === "Less than 1 month") {
-            option.click();
+        const buttons = document.querySelectorAll("button");
+        for (const button of buttons) {
+          const buttonText = button.textContent.trim();
+          if (
+            buttonText === "Submit proposal" ||
+            buttonText.includes("Send for")
+          ) {
+            button.click();
             break;
           }
         }
       });
-    }
 
-    console.log(
-      "Waiting for 3 seconds before clicking the 'Submit proposal' button..."
-    );
-    // Wait for 3 seconds before clicking the "Submit proposal" button
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+      console.log("Waiting for 3 seconds before checking the checkbox...");
+      // Wait for 3 seconds before checking the checkbox
+      await new Promise((resolve) => setTimeout(resolve, 3000));
 
-    console.log("Clicking the 'Submit proposal' or 'Send for' button...");
-    // Click the "Submit proposal" button or any button containing "Send for"
-    await page.evaluate(() => {
-      const buttons = document.querySelectorAll("button");
-      for (const button of buttons) {
-        const buttonText = button.textContent.trim();
-        if (
-          buttonText === "Submit proposal" ||
-          buttonText.includes("Send for")
-        ) {
-          button.click();
-          break;
+      console.log("Checking the checkbox...");
+      // Check the checkbox
+      await page.evaluate(() => {
+        const checkbox = document.querySelector(
+          'input.air3-checkbox-input[type="checkbox"]'
+        );
+        if (checkbox) {
+          checkbox.click();
         }
-      }
-    });
+      });
 
-    console.log("Waiting for 3 seconds before checking the checkbox...");
-    // Wait for 3 seconds before checking the checkbox
-    await new Promise((resolve) => setTimeout(resolve, 3000));
-
-    console.log("Checking the checkbox...");
-    // Check the checkbox
-    await page.evaluate(() => {
-      const checkbox = document.querySelector(
-        'input.air3-checkbox-input[type="checkbox"]'
+      console.log(
+        "Waiting for 3 seconds before clicking the 'Submit' button..."
       );
-      if (checkbox) {
-        checkbox.click();
-      }
-    });
+      // Wait for 3 seconds before clicking the "Submit" button
+      await new Promise((resolve) => setTimeout(resolve, 3000));
 
-    console.log("Waiting for 3 seconds before clicking the 'Submit' button...");
-    // Wait for 3 seconds before clicking the "Submit" button
-    await new Promise((resolve) => setTimeout(resolve, 3000));
-
-    console.log("Clicking the 'Continue to submit' or 'Submit' button...");
-    // Click the "Continue to submit" button or the "Submit" button
-    await page.evaluate(() => {
-      const buttons = document.querySelectorAll("button");
-      for (const button of buttons) {
-        const buttonText = button.textContent.trim();
-        if (
-          (buttonText.includes("Continue") &&
-            buttonText.includes("to submit")) ||
-          buttonText === "Submit"
-        ) {
-          button.click();
-          break;
+      console.log("Clicking the 'Continue to submit' or 'Submit' button...");
+      // Click the "Continue to submit" button or the "Submit" button
+      await page.evaluate(() => {
+        const buttons = document.querySelectorAll("button");
+        for (const button of buttons) {
+          const buttonText = button.textContent.trim();
+          if (
+            (buttonText.includes("Continue") &&
+              buttonText.includes("to submit")) ||
+            buttonText === "Submit"
+          ) {
+            button.click();
+            break;
+          }
         }
-      }
-    });
+      });
 
-    console.log("Waiting for 5 seconds after clicking the 'Submit' button...");
-    // Wait for 5 seconds after clicking the "Submit" button
-    await new Promise((resolve) => setTimeout(resolve, 5000));
+      console.log(
+        "Waiting for 5 seconds after clicking the 'Submit' button..."
+      );
+      // Wait for 5 seconds after clicking the "Submit" button
+      await new Promise((resolve) => setTimeout(resolve, 5000));
 
-    console.log("Closing browser...");
-    await browser.close();
+      console.log("Closing browser...");
+      await browser.close();
+    } catch (error) {
+      console.error("Error submitting proposal:", error);
+      throw error;
+    }
   } catch (err) {
     console.error("Error in loadUpworkWithCookies:", err);
     throw err;
   }
 }
+
 
 async function checkForUpdates() {
   try {
