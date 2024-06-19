@@ -74,7 +74,7 @@ async function loadUpworkWithCookies(jobSummary, jobLink) {
       } minutes before running the automation...`
     );
 
-    // Wait for the specified delay
+    // Wait for the specified delay lll
     await new Promise((resolve) => setTimeout(resolve, delayInMilliseconds));
 
     const browser = await puppeteer.launch({
