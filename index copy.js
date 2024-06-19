@@ -1,63 +1,79 @@
 const axios = require("axios");
-const Parser = require("rss-parser");
 const fs = require("fs");
-const puppeteer = require("puppeteer-extra");
-const StealthPlugin = require("puppeteer-extra-plugin-stealth");
+const puppeteer = require("puppeteer");
+const express = require("express");
+const Parser = require("rss-parser");
 require("dotenv").config();
-const express = require("express"); 
-
-// Use puppeteer-extra-plugin-stealth
-puppeteer.use(StealthPlugin());
 
 const app = express();
 const PORT = process.env.PORT || 4000;
+
+// Create an instance of the Parser class
+const parser = new Parser();
 
 // Hardcoded configuration
 const config = {
   rssUrl:
     "https://www.upwork.com/ab/feed/jobs/rss?paging=NaN-undefined&q=ai&sort=recency&api_params=1&securityToken=8f4b8e5f993ec8b834b95dc2df774ff6e23ced67cf6f210e4e4178595b88215e16709a56164d3037c0165ab473c298c97fbcaae124408b3fc63c510edb2253b5&userUid=1313721826954805248&orgUid=1650943632177328128",
-  openaiApiKey: "sk-proj-mG2yM481qFzhK6qBS3OuT3BlbkFJYTCHAKEdozotNSVQ9Hj6",
+  anthropicApiKey:
+    "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",
+  cookiesFilePath: "./cookie.json",
 };
 
-const OPENAI_API_KEY =
-  "sk-proj-mG2yM481qFzhK6qBS3OuT3BlbkFJYTCHAKEdozotNSVQ9Hj6";
+const ANTHROPIC_API_KEY =
+  "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";
 
-// OpenAI API URL
-const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
+// Claude API URL
+const CLAUDE_URL = "https://api.anthropic.com/v1/messages";
 
-// Create an instance of the Parser class
-const parser = new Parser();
+// Load cookies from cookies.json
+let cookies = [];
+try {
+  cookies = JSON.parse(fs.readFileSync(config.cookiesFilePath, "utf8"));
+  console.log("Cookies loaded successfully.");
+} catch (err) {
+  console.error("Error loading cookies:", err);
+}
+
+// Sanitize sameSite attribute
+cookies = cookies.map((cookie) => {
+  if (
+    cookie.sameSite !== "Strict" &&
+    cookie.sameSite !== "Lax" &&
+    cookie.sameSite !== "None"
+  ) {
+    delete cookie.sameSite;
+  }
+  return cookie;
+});
 
 async function generateCoverLetter(jobSummary) {
   console.log("Generating cover letter...");
   try {
     const response = await axios.post(
-      OPENAI_URL,
+      CLAUDE_URL,
       {
-        model: "gpt-4",
+        model: "claude-3-haiku-20240307",
         messages: [
           {
-            role: "system",
-            content: `Please generate a message based on this framework: Hi there! you are in the right place! My role as a [Insert The Title The Client Asks For] is to help you [Insert The Primary Client Need]. Let's schedule a brief call to align on your objectives; at the very least, I'll point you in the right direction. Here is my Calendly link: https://calendly.com/horizonlabsai/discovery-call. Give me a message for this job:\n\n${jobSummary}\n\n GIVE ONLY THE MESSAGE NOTHING ELSE.`,
+            role: "user",
+            content: `Please generate a message based on this framwork: Hi there! you are in the right place! My role as a [Insert The Title The Client Asks For] is to help you [Insert The Primary Client Need]. Lets schedule a brief call to align on your objectives; at the very least, Ill point you in the right direction. Here in my calendly link: https://calendly.com/horizonlabsai/discovery-call Give me a message for this job:\n\n${jobSummary} \n\n GIVE ONLY THE MESSAGE NOTHING ELSE.`,
           },
         ],
-        temperature: 1,
-        max_tokens: 256,
-        top_p: 1,
-        frequency_penalty: 0,
-        presence_penalty: 0,
+        max_tokens: 1024,
       },
       {
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${OPENAI_API_KEY}`,
+          "x-api-key": ANTHROPIC_API_KEY,
+          "content-type": "application/json",
+          "anthropic-version": "2023-06-01",
         },
       }
     );
 
     const data = response.data;
-    console.log("OpenAI API response:", data);
-    return data.choices[0].message.content;
+    console.log("Claude API response:", data);
+    return data.content[0].text;
   } catch (err) {
     console.error("Error generating cover letter:", err);
     throw err;
@@ -93,51 +109,8 @@ async function loadUpworkWithCookies(jobSummary, jobLink) {
     });
     const page = await browser.newPage();
 
-    const email = "mikepowersofficial@gmail.com";
-    const password = "FuckUpwork123!";
-    const security = "lions";
-
-    console.log("Navigating to login page...");
-    const loginUrl = `https://www.upwork.com/ab/account-security/login`;
-    await page.goto(loginUrl);
-
-    console.log("Waiting for 3 seconds...");
-    await new Promise((resolve) => setTimeout(resolve, 3000));
-
-    console.log("Typing email...");
-    await page.type('[aria-describedby="username-message"]', email);
-
-    console.log("Clicking the 'Continue' button...");
-    await page.click('[button-role="continue"]');
-
-    console.log("Waiting for 3 seconds...");
-    await new Promise((resolve) => setTimeout(resolve, 3000));
-
-    console.log("Typing password...");
-    await page.type('[aria-describedby="password-message"]', password);
-
-    console.log("Clicking the 'Continue' button...");
-    await page.click('[button-role="continue"]');
-
-    console.log("Waiting for 3 seconds...");
-    await new Promise((resolve) => setTimeout(resolve, 3000));
-
-    const securityAnswerInput = await page.$('[aria-describedby="answer-message"]');
-    if (securityAnswerInput) {
-      console.log("Typing security answer...");
-      await securityAnswerInput.type(security);
-
-      console.log("Clicking the 'Continue' button...");
-      await page.click('[button-role="continue"]');
-
-      console.log("Waiting for 10 seconds...");
-      await new Promise((resolve) => setTimeout(resolve, 3000));
-    } else {
-      console.log("Security answer input not found, skipping security question step.");
-    }
-
-    console.log("Waiting for 10 seconds...");
-    await new Promise((resolve) => setTimeout(resolve, 10000));
+    console.log("Setting cookies...");
+    await page.setCookie(...cookies);
 
     // Extract the required part from the link
     const linkParts = jobLink.split("_");
@@ -152,7 +125,7 @@ async function loadUpworkWithCookies(jobSummary, jobLink) {
     console.log("Waiting for 3 seconds...");
     await new Promise((resolve) => setTimeout(resolve, 3000));
 
-    // Generate cover letter using OpenAI API
+    // Generate cover letter using Claude API
     const coverLetter = await generateCoverLetter(jobSummary);
     console.log("Generated Cover Letter:", coverLetter);
 
