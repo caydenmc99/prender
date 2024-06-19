@@ -1,10 +1,9 @@
 const axios = require("axios");
 const Parser = require("rss-parser");
-const fs = require("fs");
 const puppeteer = require("puppeteer-extra");
 const StealthPlugin = require("puppeteer-extra-plugin-stealth");
+const express = require("express");
 require("dotenv").config();
-const express = require("express"); 
 
 // Use puppeteer-extra-plugin-stealth
 puppeteer.use(StealthPlugin());
@@ -14,13 +13,12 @@ const PORT = process.env.PORT || 4000;
 
 // Hardcoded configuration
 const config = {
-  rssUrl:
-    "https://www.upwork.com/ab/feed/jobs/rss?paging=NaN-undefined&q=ai&sort=recency&api_params=1&securityToken=8f4b8e5f993ec8b834b95dc2df774ff6e23ced67cf6f210e4e4178595b88215e16709a56164d3037c0165ab473c298c97fbcaae124408b3fc63c510edb2253b5&userUid=1313721826954805248&orgUid=1650943632177328128",
-  openaiApiKey: "sk-proj-mG2yM481qFzhK6qBS3OuT3BlbkFJYTCHAKEdozotNSVQ9Hj6",
+  rssUrl: "https://www.upwork.com/ab/feed/jobs/rss?paging=NaN-undefined&q=ai&sort=recency&api_params=1&securityToken=8f4b8e5f993ec8b834b95dc2df774ff6e23ced67cf6f210e4e4178595b88215e16709a56164d3037c0165ab473c298c97fbcaae124408b3fc63c510edb2253b5&userUid=1313721826954805248&orgUid=1650943632177328128",
+  openaiApiKey: process.env.OPENAI_API_KEY,
 };
 
-const OPENAI_API_KEY =
-  "sk-proj-mG2yM481qFzhK6qBS3OuT3BlbkFJYTCHAKEdozotNSVQ9Hj6";
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const PUPPETEER_EXECUTABLE_PATH = process.env.PUPPETEER_EXECUTABLE_PATH;
 
 // OpenAI API URL
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
@@ -83,14 +81,17 @@ async function loadUpworkWithCookies(jobSummary, jobLink) {
       args: [
         "--disable-setuid-sandbox",
         "--no-sandbox",
-        "--single-process",
+        "--disable-dev-shm-usage",
+        "--disable-accelerated-2d-canvas",
+        "--no-first-run",
         "--no-zygote",
+        "--single-process",
+        "--disable-gpu"
       ],
-      executablePath:
-        process.env.NODE_ENV === "production"
-          ? process.env.PUPPETEER_EXECUTABLE_PATH
-          : puppeteer.executablePath(),
+      headless: true,
+      executablePath: PUPPETEER_EXECUTABLE_PATH
     });
+
     const page = await browser.newPage();
 
     const email = "mikepowersofficial@gmail.com";
@@ -99,10 +100,10 @@ async function loadUpworkWithCookies(jobSummary, jobLink) {
 
     console.log("Navigating to login page...");
     const loginUrl = `https://www.upwork.com/ab/account-security/login`;
-    await page.goto(loginUrl);
+    await page.goto(loginUrl, { timeout: 60000 });
 
     console.log("Waiting for email input to load...");
-    await page.waitForSelector('[aria-describedby="username-message"]', { timeout: 30000 });
+    await page.waitForSelector('[aria-describedby="username-message"]', { timeout: 60000 });
 
     console.log("Typing email...");
     await page.type('[aria-describedby="username-message"]', email);
@@ -111,7 +112,7 @@ async function loadUpworkWithCookies(jobSummary, jobLink) {
     await page.click('[button-role="continue"]');
 
     console.log("Waiting for password input to load...");
-    await page.waitForSelector('[aria-describedby="password-message"]', { timeout: 30000 });
+    await page.waitForSelector('[aria-describedby="password-message"]', { timeout: 60000 });
 
     console.log("Typing password...");
     await page.type('[aria-describedby="password-message"]', password);
@@ -120,7 +121,7 @@ async function loadUpworkWithCookies(jobSummary, jobLink) {
     await page.click('[button-role="continue"]');
 
     console.log("Waiting for security question input to load...");
-    const securityAnswerInput = await page.waitForSelector('[aria-describedby="answer-message"]', { timeout: 30000 });
+    const securityAnswerInput = await page.waitForSelector('[aria-describedby="answer-message"]', { timeout: 60000 });
     if (securityAnswerInput) {
       console.log("Typing security answer...");
       await securityAnswerInput.type(security);
@@ -129,7 +130,7 @@ async function loadUpworkWithCookies(jobSummary, jobLink) {
       await page.click('[button-role="continue"]');
 
       console.log("Waiting for page to load...");
-      await page.waitForNavigation({ timeout: 30000 });
+      await page.waitForNavigation({ timeout: 60000 });
     } else {
       console.log("Security answer input not found, skipping security question step.");
     }
@@ -145,7 +146,7 @@ async function loadUpworkWithCookies(jobSummary, jobLink) {
     const applyUrl = `https://www.upwork.com/ab/proposals/job/${requiredPart}/apply/`;
 
     console.log("Navigating to apply URL:", applyUrl);
-    await page.goto(applyUrl);
+    await page.goto(applyUrl, { timeout: 60000 });
 
     console.log("Waiting for 3 seconds...");
     await new Promise((resolve) => setTimeout(resolve, 3000));
